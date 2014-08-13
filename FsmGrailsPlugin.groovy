@@ -1,8 +1,9 @@
-import grails.plugin.fsm.FsmUtils
+import com.ps.fsm.FsmEventListenersRepository
+import com.ps.fsm.FsmEventTrigger
 import grails.plugin.fsm.FsmSupportException
-import org.springframework.beans.BeanUtils;
+import grails.plugin.fsm.FsmUtils
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
-
+import org.springframework.beans.BeanUtils
 
 class FsmGrailsPlugin {
     // the plugin version
@@ -34,7 +35,8 @@ class FsmGrailsPlugin {
     def documentation = "http://grails.org/plugin/fsm"
 
     def doWithSpring = {
-        // TODO Implement runtime spring config (optional)Classes
+        fsmEventListenersRepository(FsmEventListenersRepository)
+        fsmEventTrigger(FsmEventTrigger)
     }
 
     def doWithApplicationContext = { applicationContext ->
@@ -48,19 +50,19 @@ class FsmGrailsPlugin {
     def doWithDynamicMethods = { ctx ->
 
         // Will add the fire closure where needed
-        application.domainClasses.each {domainClass ->
+        application.domainClasses.each { domainClass ->
             MetaClassRegistry registry = GroovySystem.metaClassRegistry
-            def fsm = GrailsClassUtils.getStaticPropertyValue(domainClass.clazz, FsmUtils.FSMDEF )
+            def fsm = GrailsClassUtils.getStaticPropertyValue(domainClass.clazz, FsmUtils.FSMDEF)
             if (fsm) {
                 // Will create the proper FsmSupport instance!
-                fsm.each {String p, definition ->
+                fsm.each { String p, definition ->
                     definition.each { start, defclosure ->
-                    	def mp = domainClass.metaClass.getMetaProperty(p)
+                        def mp = domainClass.metaClass.getMetaProperty(p)
                         if (!mp)
                             throw new FsmSupportException("Error in FSM definition: '${domainClass.clazz}' does not have '${p}' property to hold defined workflow status!")
-                    	def tmp = domainClass.clazz.newInstance()
-                    	if (tmp[p] != null)
-                    		log.warn("Default value of '${domainClass.clazz}.${p}' will be overriden by FSM definition for that property. ")
+                        def tmp = domainClass.clazz.newInstance()
+                        if (tmp[p] != null)
+                            log.warn("Default value of '${domainClass.clazz}.${p}' will be overriden by FSM definition for that property. ")
 
                         // Modify the metaclass so new instances will have new behaviour!!
                         domainClass.metaClass.setProperty("_fsm${p}", null)  // internal, will hold FsmSupport instance
@@ -73,38 +75,37 @@ class FsmGrailsPlugin {
                 // This code is a COPY of DomainClassGrailsPlugin.enhanceDomainClasses
                 // because I cannot seem to be able to decorate it.
                 // We just added the "${p}" initializing!
-                domainClass.metaClass.constructor = {->
-	            	def bean
-	                if(ctx.containsBean(domainClass.fullName)) {
-	                    bean = ctx.getBean(domainClass.fullName)
-	                }
-	                else {
-	                    bean = BeanUtils.instantiateClass(domainClass.clazz)
-	                }
-	            	fsm.each { pp, defdef ->
-	            		defdef.each { startstart, clos ->
+                domainClass.metaClass.constructor = { ->
+                    def bean
+                    if (ctx.containsBean(domainClass.fullName)) {
+                        bean = ctx.getBean(domainClass.fullName)
+                    } else {
+                        bean = BeanUtils.instantiateClass(domainClass.clazz)
+                    }
+                    fsm.each { pp, defdef ->
+                        defdef.each { startstart, clos ->
 //	            			def setter = GrailsClassUtils.getSetterName(pp)
 //	            			bean."${setter}"(startstart)
-	            			bean."${pp}" = startstart
-	            		}
-	            	}
-	            	bean
-	            }
-                domainClass.metaClass.static.create = {->
-                	def bean = ctx.getBean(domainClass.getFullName())
-	            	fsm.each { pp, defdef ->
-	            		defdef.each { startstart, clos ->
-	            			bean."${pp}" = startstart
-	            		}
-	            	}
-                	bean
+                            bean."${pp}" = startstart
+                        }
+                    }
+                    bean
+                }
+                domainClass.metaClass.static.create = { ->
+                    def bean = ctx.getBean(domainClass.getFullName())
+                    fsm.each { pp, defdef ->
+                        defdef.each { startstart, clos ->
+                            bean."${pp}" = startstart
+                        }
+                    }
+                    bean
                 }
             }
         }
     }
 
     def onChange = { event ->
-    	event.manager?.getGrailsPlugin("fsm")?.doWithDynamicMethods(event.ctx)
+        event.manager?.getGrailsPlugin("fsm")?.doWithDynamicMethods(event.ctx)
     }
 
     def onConfigChange = { event ->

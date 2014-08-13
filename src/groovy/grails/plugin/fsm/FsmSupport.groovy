@@ -1,4 +1,7 @@
-package grails.plugin.fsm;
+package grails.plugin.fsm
+
+import com.ps.fsm.FsmEventTrigger
+
 /**
  *
  * DSL for defining Finite State Machines.
@@ -25,8 +28,7 @@ package grails.plugin.fsm;
  * @author jorge
  *
  */
-class FsmSupport
-{
+class FsmSupport {
     /*
      * A map or maps to store events and from states of each
      * transition. The last element is another map with 'to' states
@@ -65,8 +67,7 @@ class FsmSupport
      */
     static relationships = [:]
 
-    def FsmSupport(targetObject, targetProperty, a_initialState = null, a_currentState = null)
-    {
+    def FsmSupport(targetObject, targetProperty, a_initialState = null, a_currentState = null) {
         /**
          * If no initialState has been provided we'll try to get it
          * from the object-property itself!!
@@ -92,13 +93,11 @@ class FsmSupport
 
     }
 
-    def record()
-    {
+    def record() {
         Grammar.newInstance(this);
     }
 
-    def registerTransition(a_grammar)
-    {
+    def registerTransition(a_grammar) {
         assert a_grammar.isValid(), "Invalid transition (${a_grammar})"
 
         def transition
@@ -115,30 +114,27 @@ class FsmSupport
 // TODO: How to assert non-duplications now that they are conditioned?
 //        assert cond == null && !transition[fromState], "Duplicate fromState ${fromState} for transition ${a_grammar}"
 
-        def cond = a_grammar.cond!=null?a_grammar.cond:{true}
-        def conditionedStates = transition[fromState] != null?transition[fromState] : [:]
+        def cond = a_grammar.cond != null ? a_grammar.cond : { true }
+        def conditionedStates = transition[fromState] != null ? transition[fromState] : [:]
         conditionedStates[toState] = cond
         transition[fromState] = conditionedStates
     }
 
-    def addActionToTransition(a_grammar)
-    {
+    def addActionToTransition(a_grammar) {
         def fromState = a_grammar.fromState
         def toState = a_grammar.toState
         def key = "${a_grammar.event}-${fromState}"
         if (!actions[key])
-        	actions[key] = [:]
+            actions[key] = [:]
         actions[key][toState] = a_grammar.action
     }
 
-    def reset()
-    {
+    def reset() {
         currentState = initialState
     }
 
-    def fire(a_event)
-    {
-       assert currentState, "Invalid current state '${currentState}': pass into constructor"
+    def fire(a_event) {
+        assert currentState, "Invalid current state '${currentState}': pass into constructor"
         assert transitions.containsKey(a_event), "Invalid event '${a_event}', should be one of ${transitions.keySet()}"
 
         def fromState = currentState
@@ -146,11 +142,11 @@ class FsmSupport
         def nextState
         transition[currentState].each { to, Closure cond ->
             cond.setDelegate(target) // CUIDADO
-            if ( !nextState && cond() ) {
+            if (!nextState && cond()) {
                 nextState = to
                 // Notify the object if it's interested in the transition event
                 if (target.metaClass.respondsTo(target, "onFsmTransition"))
-                        target.onFsmTransition(fromState,to)
+                    target.onFsmTransition(fromState, to)
             }
         }
         assert nextState, "There is no transition from '${currentState}' to any other state. \nFSM: ${this.transitions}"
@@ -167,28 +163,26 @@ class FsmSupport
         // Trigger the action defined if any
         def key = "${a_event}-${fromState}"
         if (actions[key] && actions[key][currentState]) {
-        	def act = actions[key][currentState]
+            def act = actions[key][currentState]
             act.setDelegate(target)
             act()
+            FsmEventTrigger.instance.fire(target.class, target.id, property, fromState, nextState)
         }
-
 
         currentState
     }
 
     def isFireable(a_event) {
         def transition = transitions[a_event]
-        return (transition[currentState]!=null)
+        return (transition[currentState] != null)
     }
 
-    def isState(a_state)
-    {
+    def isState(a_state) {
         currentState == a_state
     }
 }
 
-class Grammar
-{
+class Grammar {
     def fsm
 
     def event
@@ -198,20 +192,17 @@ class Grammar
     def action
     def conditionable  // 'from' != null && 'to' == null
 
-    Grammar(a_fsm)
-    {
+    Grammar(a_fsm) {
         fsm = a_fsm
     }
 
-    def on(a_event)
-    {
+    def on(a_event) {
         event = a_event
         toState = fromState = null
         this
     }
 
-    def on(a_event, a_transitioner)
-    {
+    def on(a_event, a_transitioner) {
         on(a_event)
 
         a_transitioner.delegate = this
@@ -220,16 +211,14 @@ class Grammar
         this
     }
 
-    def from(a_fromState)
-    {
+    def from(a_fromState) {
         conditionable = true
         cond = null
         fromState = a_fromState
         this
     }
 
-    def to(a_toState)
-    {
+    def to(a_toState) {
         assert a_toState, "Invalid toState: ${a_toState}"
 
         conditionable = false
@@ -237,8 +226,8 @@ class Grammar
         fsm.registerTransition(this)
         this
     }
-    def crash()
-    {
+
+    def crash() {
         // TODO: Will allow to explicitely crash in a forbidden event!
         // This would imply changing default behaviour so non-declared events
         // not fail and just keep currentState.
@@ -248,28 +237,25 @@ class Grammar
     /*
      * *Must* be called after 'from' and before 'to'
      */
-    def when(cond_closure)
-    {
+
+    def when(cond_closure) {
         assert conditionable, "'when' must be called after a 'from' and before 'to'"
         cond = cond_closure
         this
     }
 
-    def act(do_closure)
-	{
-    	assert toState, "'act' can only be called after a 'to' has been defined"
-    	action = do_closure
-    	fsm.addActionToTransition(this)
-    	this
-	}
+    def act(do_closure) {
+        assert toState, "'act' can only be called after a 'to' has been defined"
+        action = do_closure
+        fsm.addActionToTransition(this)
+        this
+    }
 
-    def isValid()
-    {
+    def isValid() {
         event && fromState && toState
     }
 
-    public String toString()
-    {
+    public String toString() {
         "${event}:${fromState}=>${toState}"
     }
 }
