@@ -21,23 +21,24 @@ class FsmEventTrigger {
     }
 
     public void fire(final Class entity, final Long id, final String filed, final int from, final int to) {
-        // we want to avoid exception when update is running outside of transaction
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            log.warn('Cant trigger an event - synchronization inactive!')
-            return
+        Map<String, ?> message = [
+                class: entity,
+                id   : id,
+                field: filed,
+                from : from,
+                to   : to,
+                dirty: !TransactionSynchronizationManager.isSynchronizationActive()
+        ]
+
+        if (!message.dirty) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+                @Override
+                public void afterCommit() {
+                    messageSenderService.send(com.ps.messaging.Queue.ENTITY_STATE_TRANSITION, message)
+                }
+            })
+        } else {
+            messageSenderService.send(com.ps.messaging.Queue.ENTITY_STATE_TRANSITION, message)
         }
-        // trigger message only when transaction was successfully committed
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
-            @Override
-            public void afterCommit() {
-                messageSenderService.send(com.ps.messaging.Queue.ENTITY_STATE_TRANSITION, [
-                        class: entity,
-                        id   : id,
-                        field: filed,
-                        from : from,
-                        to   : to
-                ])
-            }
-        })
     }
 }

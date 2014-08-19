@@ -19,4 +19,6 @@ public @interface FsmEventListener {
     int from()
 
     int to()
+
+    boolean unique() default false;
 }

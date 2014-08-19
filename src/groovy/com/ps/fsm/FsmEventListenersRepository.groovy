@@ -17,6 +17,9 @@ class FsmEventListenersRepository {
     @Autowired
     GrailsApplication grailsApplication
 
+    @Autowired
+    FsmEventService fsmEventService
+
     @PostConstruct
     public void init() {
         grailsApplication.mainContext.getBeansWithAnnotation(FsmEventListenerContainer).values().each { final Object annotatedObject ->
@@ -28,7 +31,13 @@ class FsmEventListenersRepository {
                     listeners[key] = []
                 }
 
-                listeners[key] << new Executor(key, annotatedObject, method)
+                Executor executor = new DefaultExecutor(annotatedObject, method)
+
+                if (annotation.unique()) {
+                    executor = new UniqueExecutor(executor, fsmEventService)
+                }
+
+                listeners[key] << executor
             }
         }
     }
@@ -41,11 +50,11 @@ class FsmEventListenersRepository {
         }
 
         FsmEvent event = new FsmEvent(id, from, to)
-        listeners[key].each { it.execute(event) }
+        listeners[key].each { it.execute(event, key) }
     }
 
     @EqualsAndHashCode(includes = ['entity', 'from', 'field', 'to'])
-    private static final class Key {
+    private static final class Key implements FsmEventUniquenessAware {
 
         private final Class entity
 
@@ -61,24 +70,50 @@ class FsmEventListenersRepository {
             this.from = from
             this.to = to
         }
+
+        @Override
+        String getUniqueness() {
+            return "${entity}-${field}-${from}-${to}"
+        }
     }
 
-    private static class Executor {
+    private static interface Executor {
 
-        private final Key key
+        public void execute(FsmEvent event, Key key)
+
+    }
+
+    private static class DefaultExecutor implements Executor {
 
         private final Object target
 
         private final Method method
 
-        Executor(Key key, Object target, Method method) {
-            this.key = key
+        DefaultExecutor(Object target, Method method) {
             this.target = target
             this.method = method
         }
 
-        public void execute(FsmEvent event) {
+        public void execute(FsmEvent event, Key key) {
             method.invoke(target, event)
+        }
+    }
+
+    private static class UniqueExecutor implements Executor {
+
+        private final DefaultExecutor executor
+
+        private final FsmEventService service
+
+        UniqueExecutor(final DefaultExecutor executor, final FsmEventService service) {
+            this.executor = executor
+            this.service = service
+        }
+
+        public void execute(FsmEvent event, Key key) {
+            service.syncExecution(key) {
+                executor.execute(event, key)
+            }
         }
     }
 

@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired
 /**
  * @author pawel.gdula
  */
-class HandlingEventService {
+class FsmEventHandlingService {
 
     static transactional = false
 
