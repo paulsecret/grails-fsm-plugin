@@ -1,5 +1,4 @@
-import com.ps.fsm.FsmEventListenersRepository
-import com.ps.fsm.FsmEventTrigger
+import com.ps.fsm.FsmTransitionEventTrigger
 import grails.plugin.fsm.FsmSupportException
 import grails.plugin.fsm.FsmUtils
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
@@ -35,8 +34,7 @@ class FsmGrailsPlugin {
     def documentation = "http://grails.org/plugin/fsm"
 
     def doWithSpring = {
-        fsmEventListenersRepository(FsmEventListenersRepository)
-        fsmEventTrigger(FsmEventTrigger)
+        fsmEventTrigger(FsmTransitionEventTrigger)
     }
 
     def doWithApplicationContext = { applicationContext ->

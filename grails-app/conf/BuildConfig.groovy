@@ -37,8 +37,5 @@ grails.project.dependency.resolution = {
     plugins {
         build(':release:3.0.1') { export = false }
         build(':rest-client-builder:1.0.3') { export = false }
-        // compile ":ps-messaging:0.3.0" { export = false }
     }
 }
-
-grails.plugin.location.'ps-messaging' = "../ps-messaging"

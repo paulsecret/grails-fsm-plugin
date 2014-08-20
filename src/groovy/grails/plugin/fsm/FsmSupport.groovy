@@ -1,6 +1,6 @@
 package grails.plugin.fsm
 
-import com.ps.fsm.FsmEventTrigger
+import com.ps.fsm.FsmTransitionEventTrigger
 
 /**
  *
@@ -166,7 +166,7 @@ class FsmSupport {
             def act = actions[key][currentState]
             act.setDelegate(target)
             act()
-            FsmEventTrigger.instance.fire(target.class, target.id, property, fromState, nextState)
+            FsmTransitionEventTrigger.instance.fire(target.class, target.id, property, fromState, nextState)
         }
 
         currentState
