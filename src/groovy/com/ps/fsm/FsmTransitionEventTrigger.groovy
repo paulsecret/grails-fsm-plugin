@@ -34,7 +34,7 @@ class FsmTransitionEventTrigger {
      */
     public void fire(final Class entityClass, final Long entityId, final String filed, final int from, final int to) {
         boolean dirty = !TransactionSynchronizationManager.isSynchronizationActive()
-        FsmTransitionEvent event = new FsmTransitionEvent(entityId, entityClass, filed, from, to, dirty)
+        FsmTransitionEvent event = new FsmTransitionEvent(entityId, entityClass.name, filed, from, to, dirty)
         listeners.each { it.handleEvent(event) }
     }
 

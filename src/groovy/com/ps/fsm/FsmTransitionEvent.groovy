@@ -15,8 +15,9 @@ public final class FsmTransitionEvent implements Serializable {
 
     /**
      * Class of entity for which transition has occurred
+     * We use string to avoid deserialization issues
      */
-    final Class entityClass
+    final String entityClass
 
     /**
      * Changed field
@@ -40,7 +41,7 @@ public final class FsmTransitionEvent implements Serializable {
      */
     final boolean dirty
 
-    FsmTransitionEvent(Long entityId, Class entityClass, String filed, Integer from, Integer to, boolean dirty) {
+    FsmTransitionEvent(Long entityId, String entityClass, String filed, Integer from, Integer to, boolean dirty) {
         this.entityId = entityId
         this.entityClass = entityClass
         this.filed = filed
