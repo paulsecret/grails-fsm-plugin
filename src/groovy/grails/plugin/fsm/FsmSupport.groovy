@@ -61,12 +61,6 @@ class FsmSupport {
     def target
     def property
 
-    /**
-     * Will hold relationships to any object & property any FsmSupport
-     * has been tied to.
-     */
-    static relationships = [:]
-
     def FsmSupport(targetObject, targetProperty, a_initialState = null, a_currentState = null) {
         /**
          * If no initialState has been provided we'll try to get it
@@ -82,12 +76,6 @@ class FsmSupport {
 
         target = targetObject
         property = targetProperty
-        def prop = property.toLowerCase()
-
-
-        if (!relationships[targetObject])
-            relationships[targetObject] = [:]
-        relationships[targetObject][prop] = this
 
         targetObject[property] = currentState
 
