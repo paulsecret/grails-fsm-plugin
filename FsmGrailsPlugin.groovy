@@ -6,7 +6,7 @@ import org.springframework.beans.BeanUtils
 
 class FsmGrailsPlugin {
     // the plugin version
-    def version = "0.7.2"
+    def version = "0.7.3-SNAPSHOT"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "1.1.1 > *"
     // the other plugins this plugin depends on

@@ -13,7 +13,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Slf4j
 class FsmTransitionEventTrigger {
 
-    @Autowired
+    @Autowired(required = false)
     List<FsmTransitionEventListener> listeners
 
     /**
@@ -35,7 +35,7 @@ class FsmTransitionEventTrigger {
     public void fire(final Class entityClass, final Long entityId, final String filed, final int from, final int to) {
         boolean dirty = !TransactionSynchronizationManager.isSynchronizationActive()
         FsmTransitionEvent event = new FsmTransitionEvent(entityId, entityClass.name, filed, from, to, dirty)
-        listeners.each { it.handleEvent(event) }
+        listeners?.each { it.handleEvent(event) }
     }
 
 }
